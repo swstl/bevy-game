@@ -1,0 +1,73 @@
+mod plugins;
+mod components;
+mod network;
+
+use avian3d::PhysicsPlugins;
+use bevy::log::LogPlugin;
+use plugins::map::MapPlugin;
+use plugins::player::PlayerPlugin;
+use bevy::prelude::*;
+use bevy::window::CursorGrabMode;
+use bevy::window::CursorOptions;
+use network::MultiplayerPlugin;
+
+
+fn main() {
+    App::new()
+        .add_plugins((
+            //  DefaultPlugins.set(LogPlugin {
+            // level: bevy::log::Level::DEBUG,
+            // filter: "wgpu=error,bevy_render=info,bevy_ecs=trace".to_string(),
+            // ..default()
+            // }),
+            DefaultPlugins,
+            PhysicsPlugins::default(),
+            PlayerPlugin,
+            MapPlugin,
+            MultiplayerPlugin,
+        ))
+        .add_systems(Startup, setup)
+        .add_systems(Update, grab_mouse)
+        .run();
+}
+
+fn setup(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    // Add a light to illuminate the scene
+    commands.spawn((
+        PointLight {
+            intensity: 200_000.0,
+            shadows_enabled: true,
+            ..default()
+        },
+        Transform::from_xyz(4.0, 8.0, 4.0),
+    ));
+
+    // Add a random object to the scene 
+    commands.spawn((
+        Mesh3d(meshes.add(Cuboid::new(2.0, 0.5, 2.0))),
+        MeshMaterial3d(materials.add(Color::srgb(0.3, 0.8, 0.3))),
+        Transform::from_xyz(0.0, 0.0, 0.0),
+    ));
+}
+
+// This system grabs the mouse when the left mouse button is pressed
+// and releases it when the escape key is pressed
+fn grab_mouse(
+    mut cursor_options: Single<&mut CursorOptions>,
+    mouse: Res<ButtonInput<MouseButton>>,
+    key: Res<ButtonInput<KeyCode>>,
+) {
+    if mouse.just_pressed(MouseButton::Left) {
+        cursor_options.visible = false;
+        cursor_options.grab_mode = CursorGrabMode::Locked;
+    }
+
+    if key.just_pressed(KeyCode::Escape) {
+        cursor_options.visible = true;
+        cursor_options.grab_mode = CursorGrabMode::None;
+    }
+}

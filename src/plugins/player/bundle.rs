@@ -1,0 +1,42 @@
+use bevy::prelude::*;
+use avian3d::prelude::*;
+use crate::components::vitals::Movement;
+
+#[derive(Bundle)]
+pub struct PlayerBundle {
+    mesh: Mesh3d,
+    material: MeshMaterial3d<StandardMaterial>,
+    transform: Transform,
+    rigid_body: RigidBody,
+    // friction: Friction,
+    locked_axes: LockedAxes,
+    collider: Collider,
+    collision_events: CollisionEventsEnabled,
+    movement: Movement,
+}
+
+impl PlayerBundle {
+    pub fn new(
+        mesh: Handle<Mesh>,
+        material: Handle<StandardMaterial>,
+        position: Vec3,
+    ) -> Self {
+        Self {
+            mesh: Mesh3d(mesh),
+            material: MeshMaterial3d(material),
+            transform: Transform::from_translation(position),
+            rigid_body: RigidBody::Dynamic,
+            // friction: Friction::ZERO,
+            locked_axes: LockedAxes::ROTATION_LOCKED,
+            collider: Collider::cuboid(1.0, 1.0, 1.0),
+            collision_events: CollisionEventsEnabled,
+            movement: Movement {
+                speed: 500.0,
+                sprint_aplifier: 3.0,
+                jump_strength: 15.0,
+                is_grounded: false,
+            },
+        }
+    }
+}
+
