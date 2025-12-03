@@ -1,20 +1,16 @@
-use std::{collections::HashMap, sync::Arc};
-
+use std::collections::HashMap;
 use bevy::prelude::*;
-use tokio::{runtime::Runtime, sync::mpsc::{UnboundedReceiver as Receiver, UnboundedSender as Sender}};
-use serde::{Deserialize, Serialize};
+use tokio::{sync::mpsc::{UnboundedReceiver as Receiver, UnboundedSender as Sender}};
 
 use crate::network::synchronizer::Synchronizer;
 
 
-#[derive(Debug, Resource, Deserialize, Serialize)]
+#[derive(Debug, Resource)]
 pub enum WSMessages {
     Message(String),
     Connected,
     Disconnected,
-    Component {
-        data: serde_json::Value,
-    },
+    Sync(Vec<u8>),
 }
 
 
@@ -28,7 +24,4 @@ pub struct WSMessageChannels {
 pub struct LobbyInfo {
     pub connected_players: HashMap<i64, Synchronizer>
 }
-
-#[derive(Resource, Clone)]
-pub struct MultiplayerRuntime(pub Arc<Runtime>);
 

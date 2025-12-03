@@ -6,15 +6,21 @@ edition = "2024"
 [dependencies]
 avian3d = "0.4.0"
 bevy = "0.17.2"
+bincode = "2.0.1"
 crossbeam = "0.8.4"
 futures-util = "0.3.31"
 rand = "0.9.2"
 serde = "1.0.228"
 serde_json = "1.0.145"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio-tungstenite = { version = "0.28.0", features = ["native-tls"] }
 tokio = { version = "1.48.0", features = ["sync", "rt", "macros", "rt-multi-thread"] }
-tungstenite = "0.28.0"
-bincode = "2.0.1"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+tokio = { version = "1", features = ["rt", "sync", "macros"] }
+wasm-bindgen-futures = "0.4.56"
+tokio-tungstenite-wasm = "0.6.1"
 
 [profile.dev.package."*"]
 opt-level = 3

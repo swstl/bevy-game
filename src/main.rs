@@ -14,13 +14,20 @@ use network::MultiplayerPlugin;
 
 fn main() {
     App::new()
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                fit_canvas_to_parent: true, 
+                prevent_default_event_handling: false,
+                ..default()
+            }),
+            ..default()
+        }))
         .add_plugins((
             //  DefaultPlugins.set(LogPlugin {
             // level: bevy::log::Level::DEBUG,
             // filter: "wgpu=error,bevy_render=info,bevy_ecs=trace".to_string(),
             // ..default()
             // }),
-            DefaultPlugins,
             PhysicsPlugins::default(),
             PlayerPlugin,
             MapPlugin,

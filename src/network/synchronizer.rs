@@ -6,7 +6,7 @@ use rand;
 
 const THRESHOLD: f32 = 0.1;
 
-#[derive(Component, Serialize, Deserialize, Debug)]
+#[derive(Component, Serialize, Deserialize, Debug, Clone)]
 pub struct Synchronizer{
     id: i64,
     pos: Vec3,
@@ -24,13 +24,50 @@ impl Synchronizer {
 
     fn sync(&self, channels: &WSMessageChannels){
 
-        let msg = WSMessages::Component {
-            data: serde_json::to_value(self).unwrap(),
-        };
+        let msg = WSMessages::Sync(self.to_bytes());
 
         if let Err(e) = channels.outgoing.send(msg){
             eprintln!("Failed to send sync message: {:?}", e);
         }
+    }
+
+    fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(36);
+        // id 8 bytes
+        bytes.extend_from_slice(&self.id.to_le_bytes());
+
+        // pos 12 bytes
+        bytes.extend_from_slice(&self.pos.x.to_le_bytes());
+        bytes.extend_from_slice(&self.pos.y.to_le_bytes());
+        bytes.extend_from_slice(&self.pos.z.to_le_bytes());
+
+        // rot 16 bytes
+        bytes.extend_from_slice(&self.rot.x.to_le_bytes());
+        bytes.extend_from_slice(&self.rot.y.to_le_bytes());
+        bytes.extend_from_slice(&self.rot.z.to_le_bytes());
+        bytes.extend_from_slice(&self.rot.w.to_le_bytes());
+        bytes
+    }
+
+    fn from_bytes(bytes: &[u8]) -> Result<Self, &'static str> {
+        if bytes.len() < 36 {
+            return Err("Not enough bytes");
+        }
+
+        Ok(Synchronizer {
+            id: i64::from_le_bytes(bytes[0..8].try_into().unwrap()),
+            pos: Vec3::new(
+                f32::from_le_bytes(bytes[8..12].try_into().unwrap()),
+                f32::from_le_bytes(bytes[12..16].try_into().unwrap()),
+                f32::from_le_bytes(bytes[16..20].try_into().unwrap()),
+            ),
+            rot: Quat::from_xyzw(
+                f32::from_le_bytes(bytes[20..24].try_into().unwrap()),
+                f32::from_le_bytes(bytes[24..28].try_into().unwrap()),
+                f32::from_le_bytes(bytes[28..32].try_into().unwrap()),
+                f32::from_le_bytes(bytes[32..36].try_into().unwrap()),
+            ),
+        })
     }
 }
 
@@ -74,9 +111,13 @@ pub (crate) fn handle_sync(
     // spawn new entities if there are some
     while let Ok(msg) = channels.incomming.try_recv(){
         match msg {
-            WSMessages::Component { data } => {
-                let Ok(inc_sync) = serde_json::from_value::<Synchronizer>(data) else {
-                    continue
+            WSMessages::Sync(inc_sync) => {
+                let inc_sync = match Synchronizer::from_bytes(&inc_sync){
+                    Ok(s) => s,
+                    Err(e) => {
+                        eprintln!("Failed to decode sync message: {}", e);
+                        continue;
+                    }
                 };
 
                 if !lobby.connected_players.contains_key(&inc_sync.id){
