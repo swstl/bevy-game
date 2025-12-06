@@ -1,40 +1,71 @@
+/////////////////////////////////
+//////////// Imports ////////////
+/////////////////////////////////
 pub mod bundle;
+pub mod camera;
 
 use crate::components::entities::Player;
+use crate::components::entities::PlayerBody;
 use crate::components::vitals::Movement;
 use crate::components::objects::Ground;
-use crate::network::synchronizer::Synchronizer;
+use crate::plugins::network::synchronizer::Synchronizer;
 use avian3d::prelude::*;
 use bevy::prelude::*;
 
-use bundle::PlayerBundle;
+use camera::move_camera;
+use camera::setup_camera;
+use bundle::SimplePlayerBundle;
 
+
+
+
+///////////////////////////////////////
+//////////// Player plugin ////////////
+///////////////////////////////////////
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_player)
-            .add_systems(Update, player_movement);
+        app.add_systems(Startup, (spawn_player, setup_camera))
+            .add_systems(Update, (move_player, move_camera));
     }
 }
 
+
+
+
+/////////////////////////////////////////////
+//////////// Spawning the player ////////////
+/////////////////////////////////////////////
 fn spawn_player(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    ass: Res<AssetServer>
 ) {
+    let scale= Vec3::splat(0.3);
+
     commands
         .spawn((
-            Player,
-            PlayerBundle::new(
-                meshes.add(Cuboid::new(1.0, 1.0, 1.0)),
-                materials.add(Color::srgb(0.8, 0.3, 1.0)),
-                Vec3::new(0.0, 2.0, 0.0)
-            ),
-            Synchronizer::default()
+            Name::new("LocalPlayer"),
+            Synchronizer::default(),
+            SimplePlayerBundle::new(),
+            Player
         ))
         .with_children(|parent| {
+
             parent.spawn((
+                Name::new("PlayerBody"),
+                PlayerBody,
+                CollisionEventsEnabled,
+                Collider::cuboid(1.75*scale.x, 2.8*scale.y, 1.0*scale.z),
+            ))
+                .with_child((
+                SceneRoot(ass.load("character.glb#Scene0")),
+                Transform::from_scale(scale)
+                    .with_translation(Vec3::new(0.0, -1.4*scale.y, 0.0))
+            ));
+
+            parent.spawn((
+                Name::new("PlayerCamera"),
                 Camera3d::default(),
                 Transform::from_xyz(0.0, 2.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ));
@@ -42,61 +73,87 @@ fn spawn_player(
         .observe(on_ground_collision);
 }
 
-fn player_movement(
+
+
+
+
+
+///////////////////////////////////////////
+//////////// Moving the player ////////////
+///////////////////////////////////////////
+type CameraQuery<'w, 's> = Single<'w, 's, &'static Transform, (With<Camera>, Without<Player>, Without<PlayerBody>)>; 
+type BodyQuery<'w, 's> = Single<'w, 's, &'static mut Transform, (With<PlayerBody>, Without<Player>, Without<Camera>)>; 
+type PlayerQuery<'w, 's> = Single<'w, 's, (&'static mut Transform, &'static mut LinearVelocity, &'static mut Movement), With<Player>>; 
+
+
+fn move_player(
     keyboard: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
-    mut query: Query<(&mut Transform, &mut LinearVelocity, &mut Movement), With<Player>>,
+    camera: CameraQuery,
+    player: PlayerQuery, 
+    mut body: BodyQuery
 ) {
-    for (mut transform, mut velocity, mut player) in &mut query {
-        let mut speed = player.speed;
+    let (mut transform, mut velocity, mut player) = player.into_inner(); 
 
-        if transform.translation.y <= 0.2 {
-            transform.translation.y = 0.2;
-            velocity.y = 0.0;
-        }
-        if keyboard.any_pressed([KeyCode::Space])
-            && (player.is_grounded || transform.translation.y <= 0.21)
-        {
-            velocity.y = player.jump_strength;
-            player.is_grounded = false;
-        }
-        if keyboard.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]) {
-            speed = player.speed * player.sprint_aplifier;
-        }
+    let mut speed = player.speed;
 
-        let mut direction = Vec3::ZERO;
+    if transform.translation.y <= 0.2 {
+        transform.translation.y = 0.2;
+        velocity.y = 0.0;
+    }
+    if keyboard.any_pressed([KeyCode::Space])
+        && (player.is_grounded || transform.translation.y <= 0.21)
+    {
+        velocity.y = player.jump_strength;
+        player.is_grounded = false;
+    }
+    if keyboard.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]) {
+        speed = player.speed * player.sprint_aplifier;
+    }
 
-        if keyboard.any_pressed([KeyCode::ArrowLeft, KeyCode::KeyA]) {
-            direction.x -= 1.0;
-        }
-        if keyboard.any_pressed([KeyCode::ArrowRight, KeyCode::KeyD]) {
-            direction.x += 1.0;
-        }
-        if keyboard.any_pressed([KeyCode::ArrowUp, KeyCode::KeyW]) {
-            direction.z -= 1.0;
-        }
-        if keyboard.any_pressed([KeyCode::ArrowDown, KeyCode::KeyS]) {
-            direction.z += 1.0;
-        }
+    let mut direction = Vec3::ZERO;
+    let camera_forward = camera.forward();
+    let camera_right = camera.right();
+    let sideways = Vec3::new(camera_right.x, 0.0, camera_right.z).normalize();
+    let forward = Vec3::new(camera_forward.x, 0.0, camera_forward.z).normalize();
 
-        if direction.length_squared() > 0.0 {
-            direction = direction.normalize();
-        } else {
-            direction = Vec3::ZERO;
-        }
+    if keyboard.any_pressed([KeyCode::ArrowLeft, KeyCode::KeyA]) {
+        direction -= sideways;
+    }
+    if keyboard.any_pressed([KeyCode::ArrowRight, KeyCode::KeyD]) {
+        direction += sideways;
+    }
+    if keyboard.any_pressed([KeyCode::ArrowUp, KeyCode::KeyW]) {
+        direction += forward;
+    }
+    if keyboard.any_pressed([KeyCode::ArrowDown, KeyCode::KeyS]) {
+        direction -= forward;
+    }
 
-        velocity.x = direction.x * speed * time.delta_secs();
-        velocity.z = direction.z * speed * time.delta_secs();
+    velocity.x = direction.x * speed * time.delta_secs();
+    velocity.z = direction.z * speed * time.delta_secs();
+
+
+    if direction.length_squared() > 0.0 {
+        let angle = -direction.z.atan2(direction.x);
+        let rot = Quat::from_rotation_y(angle + std::f32::consts::PI/2.0);
+        body.rotation = body.rotation.slerp(rot, 10.0 * time.delta_secs());
     }
 }
 
+
+
+
+/////////////////////////////////////////
+//////////// Check collision ////////////
+/////////////////////////////////////////
 fn on_ground_collision(
     event: On<CollisionStart>,
     mut player_query: Query<&mut Movement, With<Player>>,
     ground_query: Query<&Ground>,
 ) {
     if ground_query.get(event.collider2).is_ok() &&
-        let Ok(mut player) = player_query.get_mut(event.collider1)
+       let Ok(mut player) = player_query.get_mut(event.collider1)
     {
         player.is_grounded = true;
     }

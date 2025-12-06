@@ -13,6 +13,9 @@ use tokio_tungstenite_wasm::Message;
 const APP_ID: &str = "67";
 const URL: &str = "wss://broadcast.dogfetus.no";
 
+///////////////////////////////////////////////////////////////
+//////////////////////// Initial setup ////////////////////////
+///////////////////////////////////////////////////////////////
 pub fn connect_multiplayer(
     mut commands: Commands,
 ) {
@@ -26,9 +29,7 @@ pub fn connect_multiplayer(
         outgoing: to_others_tx,
     });
  
-    commands.insert_resource(LobbyInfo {
-        connected_players: HashMap::new(),
-    });
+    commands.init_resource::<resource::LobbyInfo>();
 }
 
 fn spawn_ws_tasks(
@@ -41,7 +42,7 @@ fn spawn_ws_tasks(
 
         match ws.await {
             Ok(socket) => {
-                info!("WebSocket connected successfully");
+                // info!("WebSocket connected successfully");
                 let (sender, receiver) = socket.split();
                 wasm_bindgen_futures::spawn_local(ws_sender(sender, to_others));
                 wasm_bindgen_futures::spawn_local(ws_receiver(receiver, to_us));

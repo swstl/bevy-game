@@ -1,3 +1,6 @@
+/////////////////////////////////////////////////////////
+///////////////////////// Network mod ////////////////////////
+/////////////////////////////////////////////////////////
 pub mod resource;
 pub mod synchronizer;
 
@@ -6,12 +9,13 @@ pub mod native;
 #[cfg(not(target_arch = "wasm32"))]
 use native::connect_multiplayer;
 
+#[allow(inactive_code)]
 #[cfg(target_arch = "wasm32")]
 pub mod wasm;
 #[cfg(target_arch = "wasm32")]
 use wasm::connect_multiplayer;
 
-use crate::network::synchronizer::{handle_sync, multiplayer_sender};
+use synchronizer::{handle_sync, multiplayer_sender};
 use bevy::prelude::*;
 use tokio::runtime::Builder;
 use std::sync::Arc;
@@ -28,10 +32,10 @@ impl Plugin for MultiplayerPlugin {
     fn build(&self, app: &mut App) {
         #[cfg(not(target_arch = "wasm32"))]
         {
-            use crate::network::native::MultiplayerRuntime;
+            use native::MultiplayerRuntime;
             let mp_runtime = Arc::new(
                 Builder::new_multi_thread()
-                    .worker_threads(2)  // 1 for sender, 1 for receiver
+                    .worker_threads(2)
                     .thread_name("mp-workers")
                     .enable_all()
                     .build()
@@ -44,10 +48,4 @@ impl Plugin for MultiplayerPlugin {
         app.add_systems(Update, multiplayer_sender);
         app.add_systems(Update, handle_sync);
     }
-}
-
-
-trait Sendable<const N: usize>: Sized {
-    fn encode(&self) -> [u8; N];
-    fn decode(data: &[u8; N]) -> Result<Self, &'static str>;
 }

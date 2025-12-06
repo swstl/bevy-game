@@ -1,15 +1,16 @@
+/////////////////////////////////////////////////////////
+///////////////////////// resource ////////////////////////
+/////////////////////////////////////////////////////////
 use std::collections::HashMap;
 use bevy::prelude::*;
 use tokio::{sync::mpsc::{UnboundedReceiver as Receiver, UnboundedSender as Sender}};
-
-use crate::network::synchronizer::Synchronizer;
 
 
 #[derive(Debug, Resource)]
 pub enum WSMessages {
     Message(String),
-    Connected,
-    Disconnected,
+    Connected(Vec<u8>),
+    Disconnected(Vec<u8>),
     Sync(Vec<u8>),
 }
 
@@ -20,8 +21,9 @@ pub struct WSMessageChannels {
     pub outgoing: Sender<WSMessages>
 }
 
-#[derive(Resource, Debug)]
+
+#[derive(Resource, Debug, Default)]
 pub struct LobbyInfo {
-    pub connected_players: HashMap<i64, Synchronizer>
+    pub players: HashMap<i64, Entity>
 }
 

@@ -2,11 +2,10 @@
 ///////////////////////// native ////////////////////////
 /////////////////////////////////////////////////////////
 
-use crate::network::{resource, synchronizer::Synchronizer};
-use crate::network::resource::WSMessages;
+use super::resource;
+use super::resource::WSMessages;
 use bevy::prelude::*;
 use futures_util::{SinkExt, StreamExt};
-use std::collections::HashMap;
 use tokio::sync::mpsc::{UnboundedSender as Sender, UnboundedReceiver as Receiver, self};
 use std::sync::Arc;
 use tokio::runtime::Runtime;
@@ -22,10 +21,14 @@ use tokio_tungstenite::{
 const APP_ID: &str = "67";
 const URL: &str = "wss://broadcast.dogfetus.no";
 
+
+
+
+///////////////////////////////////////////////////////////////
+//////////////////////// Initial setup ////////////////////////
+///////////////////////////////////////////////////////////////
 #[derive(Resource, Clone)]
 pub struct MultiplayerRuntime(pub Arc<Runtime>);
-
-
 
 pub(crate) fn connect_multiplayer(
     mut commands: Commands,
@@ -41,9 +44,7 @@ pub(crate) fn connect_multiplayer(
         outgoing: to_others_tx,
     });
 
-    commands.insert_resource(resource::LobbyInfo {
-        connected_players: HashMap::new(),
-    });
+    commands.init_resource::<resource::LobbyInfo>();
 }
 
 
@@ -61,7 +62,7 @@ fn spawn_ws_tasks_native(
 
          match connect_async(request).await {
             Ok((socket, _response)) => {
-                info!("WebSocket connected successfully");
+                // info!("WebSocket connected successfully");
                 let (sender, receiver) = socket.split();
 
                 tokio::spawn(ws_sender(sender, to_others));

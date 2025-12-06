@@ -1,7 +1,14 @@
+/////////////////////////////////
+//////////// Imports ////////////
+/////////////////////////////////
 use bevy::prelude::*;
 use avian3d::prelude::*;
 use crate::components::vitals::Movement;
 
+
+/////////////////////////////////////////////////
+//////////// Implement player bundle ////////////
+/////////////////////////////////////////////////
 #[derive(Bundle)]
 pub struct PlayerBundle {
     mesh: Mesh3d,
@@ -40,3 +47,35 @@ impl PlayerBundle {
     }
 }
 
+
+
+
+//////////////////////////////////////////////
+//////////// simple player bundle ////////////
+//////////////////////////////////////////////
+
+#[derive(Bundle)]
+pub struct SimplePlayerBundle {
+    transform: Transform,
+    rigid_body: RigidBody,
+    // friction: Friction,
+    locked_axes: LockedAxes,
+    movement: Movement,
+}
+
+impl SimplePlayerBundle {
+    pub fn new() -> Self {
+        Self {
+            transform: Transform::from_translation(Vec3::ZERO),
+            rigid_body: RigidBody::Dynamic,
+            // friction: Friction::ZERO,
+            locked_axes: LockedAxes::ROTATION_LOCKED,
+            movement: Movement {
+                speed: 500.0,
+                sprint_aplifier: 3.0,
+                jump_strength: 15.0,
+                is_grounded: false,
+            },
+        }
+    }
+}

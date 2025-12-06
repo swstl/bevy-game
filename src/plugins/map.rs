@@ -44,6 +44,7 @@ fn generate_random_map(
 
     // Spawn floor
     commands.spawn((
+        Name::new("Floor"),
         Mesh3d(meshes.add(Cuboid::new(MAP_SIZE as f32, 0.1, MAP_SIZE as f32))),
         MeshMaterial3d(floor_mat.clone()),
         Transform::from_xyz(MAP_SIZE as f32/2.0, 0.0, MAP_SIZE as f32/2.0),
