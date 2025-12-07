@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use super::Recieved; 
 use super::resource::{LobbyInfo, WSMessageChannels, WSMessages};
 use crate::plugins::player::bundle::PlayerBundle;
+use std::collections::hash_map::Entry::Vacant;
 use rand;
 
 const THRESHOLD: f32 = 0.1;
@@ -139,7 +140,7 @@ pub (crate) fn handle_sync(
                 };
 
                 // spawn if new
-                if let std::collections::hash_map::Entry::Vacant(e) = lobby.players.entry(inc_sync.id) {
+                if let Vacant(e) = lobby.players.entry(inc_sync.id) {
                     let entity = spawn_online_player(
                         &inc_sync,
                         &mut commands,

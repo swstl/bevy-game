@@ -3,6 +3,7 @@
 /////////////////////////////////
 pub mod bundle;
 pub mod camera;
+pub mod animation;
 
 use crate::components::entities::Player;
 use crate::components::entities::PlayerBody;
@@ -14,8 +15,10 @@ use bevy::prelude::*;
 
 use camera::move_camera;
 use camera::setup_camera;
+use animation::load_animation;
 use bundle::SimplePlayerBundle;
 
+const GLTF_PATH: &str = "character.glb";
 
 
 
@@ -26,17 +29,26 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (spawn_player, setup_camera))
-            .add_systems(Update, (move_player, move_camera));
+        app.add_systems(Startup, 
+        (
+            spawn_player, 
+            setup_camera,
+            load_animation,
+        ))
+        .add_systems(Update, 
+        (
+            move_player, 
+            move_camera
+        ));
     }
 }
 
 
 
 
-/////////////////////////////////////////////
-//////////// Spawning the player ////////////
-/////////////////////////////////////////////
+/////////////////////////////////
+//////////// Startup ////////////
+/////////////////////////////////
 fn spawn_player(
     mut commands: Commands,
     ass: Res<AssetServer>
@@ -59,7 +71,7 @@ fn spawn_player(
                 CollisionEventsEnabled,
             ))
                 .with_child((
-                SceneRoot(ass.load("character.glb#Scene0")),
+                SceneRoot(ass.load(GltfAssetLabel::Scene(0).from_asset(GLTF_PATH))),
                 Transform::from_scale(scale)
                     .with_translation(Vec3::new(0.0, -1.4*scale.y, 0.0))
             )).observe(on_ground_collision);

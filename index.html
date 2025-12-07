@@ -20,13 +20,67 @@
             top: 0;
             left: 0;
         }
+        #loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0a0a0a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+        #loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #333;
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #loading-text {
+            color: #fff;
+            font-family: monospace;
+            font-size: 18px;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <div id="loading-text">Loading game...</div>
+    </div>
+    
     <script type="module">
         import init from './wasm/bavytest.js';
+        
         init().then(() => {
             console.log("Game loaded!");
+            
+            // Hide loading screen
+            const loadingScreen = document.getElementById('loading-screen');
+            loadingScreen.classList.add('hidden');
+            
+            // Remove it completely after transition
+            setTimeout(() => {
+                loadingScreen.remove();
+            }, 500);
+        }).catch(err => {
+            console.error("Failed to load game:", err);
+            document.getElementById('loading-text').textContent = 'Failed to load. Check console.';
         });
     </script>
 </body>

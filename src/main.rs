@@ -22,7 +22,7 @@ fn main() {
                 }),
                 ..default()
             }),
-            PhysicsDebugPlugin,
+            // PhysicsDebugPlugin,
             PhysicsPlugins::default(),
             PlayerPlugin,
             MapPlugin,

@@ -39,7 +39,7 @@ pub fn move_camera(
     let delta = mouse_motion.delta;
 
     let delta_yaw = delta.x * settings.sensitivity;
-    let delta_pitch = -delta.y * settings.sensitivity;
+    let delta_pitch = delta.y * settings.sensitivity;
 
     // Obtain the existing pitch, yaw, and roll values from the transform.
     let (yaw, pitch, roll) = camera.rotation.to_euler(EulerRot::YXZ);
