@@ -5,13 +5,17 @@ pub mod bundle;
 pub mod camera;
 pub mod animation;
 
+use std::time::Duration;
+
 use crate::components::entities::Player;
 use crate::components::entities::PlayerBody;
 use crate::components::vitals::Movement;
 use crate::components::objects::Ground;
 use crate::plugins::network::synchronizer::Synchronizer;
+use crate::plugins::player::animation::AnimatedPlayer;
 use animation::animate_meshes;
 use animation::load_animation;
+use avian3d::data_structures::graph::NodeIndex;
 use avian3d::prelude::*;
 use bevy::prelude::*;
 
@@ -99,58 +103,77 @@ type BodyQuery<'w, 's> = Single<'w, 's, &'static mut Transform, (With<PlayerBody
 type PlayerQuery<'w, 's> = Single<'w, 's, (&'static mut Transform, &'static mut LinearVelocity, &'static mut Movement), With<Player>>; 
 
 
+#[allow(clippy::too_many_arguments)]
 fn move_player(
     keyboard: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
     camera: CameraQuery,
     player: PlayerQuery, 
-    mut body: BodyQuery
+    mut body: BodyQuery,
+    mut animation_players: Query<(&mut AnimationPlayer, &mut AnimationTransitions), With<AnimatedPlayer>>,
+    mut current_animation: Local<AnimationNodeIndex>,
+    animations: Res<animation::PlayerAnimations>,
 ) {
     let (mut transform, mut velocity, mut player) = player.into_inner(); 
+    for (mut a_player, mut transitions) in &mut animation_players {
 
-    let mut speed = player.speed;
+        let mut speed = player.speed;
 
-    if transform.translation.y <= 0.2 {
-        transform.translation.y = 0.2;
-        velocity.y = 0.0;
-    }
-    if keyboard.any_pressed([KeyCode::Space])
-        && (player.is_grounded || transform.translation.y <= 0.21)
-    {
-        velocity.y = player.jump_strength;
-        player.is_grounded = false;
-    }
-    if keyboard.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]) {
-        speed = player.speed * player.sprint_aplifier;
-    }
+        if transform.translation.y <= 0.2 {
+            transform.translation.y = 0.2;
+            velocity.y = 0.0;
+        }
+        if keyboard.any_pressed([KeyCode::Space])
+            && (player.is_grounded || transform.translation.y <= 0.21)
+        {
+            velocity.y = player.jump_strength;
+            player.is_grounded = false;
+        }
 
-    let mut direction = Vec3::ZERO;
-    let camera_forward = camera.forward();
-    let camera_right = camera.right();
-    let sideways = Vec3::new(camera_right.x, 0.0, camera_right.z).normalize();
-    let forward = Vec3::new(camera_forward.x, 0.0, camera_forward.z).normalize();
+        if keyboard.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]) {
+            speed = player.speed * player.sprint_aplifier;
+        }
 
-    if keyboard.any_pressed([KeyCode::ArrowLeft, KeyCode::KeyA]) {
-        direction -= sideways;
-    }
-    if keyboard.any_pressed([KeyCode::ArrowRight, KeyCode::KeyD]) {
-        direction += sideways;
-    }
-    if keyboard.any_pressed([KeyCode::ArrowUp, KeyCode::KeyW]) {
-        direction += forward;
-    }
-    if keyboard.any_pressed([KeyCode::ArrowDown, KeyCode::KeyS]) {
-        direction -= forward;
-    }
+        let mut direction = Vec3::ZERO;
+        let camera_forward = camera.forward();
+        let camera_right = camera.right();
+        let sideways = Vec3::new(camera_right.x, 0.0, camera_right.z).normalize();
+        let forward = Vec3::new(camera_forward.x, 0.0, camera_forward.z).normalize();
 
-    velocity.x = direction.x * speed * time.delta_secs();
-    velocity.z = direction.z * speed * time.delta_secs();
+        if keyboard.any_pressed([KeyCode::ArrowLeft, KeyCode::KeyA]) {
+            direction -= sideways;
+        }
+        if keyboard.any_pressed([KeyCode::ArrowRight, KeyCode::KeyD]) {
+            direction += sideways;
+        }
+        if keyboard.any_pressed([KeyCode::ArrowUp, KeyCode::KeyW]) {
+            direction += forward;
+        }
+        if keyboard.any_pressed([KeyCode::ArrowDown, KeyCode::KeyS]) {
+            direction -= forward;
+        }
 
+        velocity.x = direction.x * speed * time.delta_secs();
+        velocity.z = direction.z * speed * time.delta_secs();
 
-    if direction.length_squared() > 0.0 {
-        let angle = -direction.z.atan2(direction.x);
-        let rot = Quat::from_rotation_y(angle + std::f32::consts::PI/2.0);
-        body.rotation = body.rotation.slerp(rot, 10.0 * time.delta_secs());
+        let animation_to_play = if direction.length_squared() > 0.0 {
+            let angle = -direction.z.atan2(direction.x);
+            let rot = Quat::from_rotation_y(angle + std::f32::consts::PI/2.0);
+            body.rotation = body.rotation.slerp(rot, 10.0 * time.delta_secs());
+            animations.walk
+        } else {
+            animations.idle
+        };
+
+        if *current_animation != animation_to_play {
+            transitions
+                .play(
+                    &mut a_player, 
+                    animation_to_play, 
+                    Duration::from_secs_f32(0.2))
+                .repeat();
+            *current_animation = animation_to_play;
+        }
     }
 }
 

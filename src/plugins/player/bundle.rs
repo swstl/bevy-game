@@ -38,7 +38,7 @@ impl PlayerBundle {
             collider: Collider::cuboid(1.0, 1.0, 1.0),
             collision_events: CollisionEventsEnabled,
             movement: Movement {
-                speed: 500.0,
+                speed: 100.0,
                 sprint_aplifier: 3.0,
                 jump_strength: 15.0,
                 is_grounded: false,

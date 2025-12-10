@@ -7,6 +7,8 @@ use super::PlayerBody;
 use super::GLTF_PATH;
 
 const NUMBER_OF_ANIMATIONS: usize = 18;
+#[derive(Component)]
+pub struct AnimatedPlayer;
 
 // A resource that stores a reference to an animation we want to play.
 // This will help prevent loading the animation multiple times
@@ -89,11 +91,25 @@ pub fn load_animation(
 pub fn animate_meshes(
     mut commands: Commands,
     animations: Res<PlayerAnimations>,
-    mut a_players: Query<(Entity, &mut AnimationPlayer, &ChildOf), Added<AnimationPlayer>>,
-    bodies: Query<Entity, With<PlayerBody>>,
+    mut a_players: Query<(Entity, &mut AnimationPlayer), Added<AnimationPlayer>>,
+    bodies: Query<(), With<PlayerBody>>,
+    hierarchy: Query<&ChildOf>,
 ){
-    for (entity, mut a_player, child_of) in &mut a_players {
-        if bodies.contains(child_of.0){
+    for (entity, mut a_player) in &mut a_players {
+        let mut current = entity;
+        let mut found_player_body = false;
+
+        // traverse up to find the playerbody (if any)
+        while let Ok(child_of) = hierarchy.get(current) {
+            if bodies.contains(child_of.0) {
+                found_player_body = true;
+                break;
+            }
+            current = child_of.0;
+        }
+
+        // only add animation to player bodies
+        if found_player_body {
             let mut transitions = AnimationTransitions::new();
 
             // starts the idle animation
@@ -104,7 +120,8 @@ pub fn animate_meshes(
             commands
                 .entity(entity)
                 .insert(AnimationGraphHandle(animations.graph_handle.clone()))
-                .insert(transitions);
+                .insert(transitions)
+                .insert(AnimatedPlayer);
         }
     }
 }
