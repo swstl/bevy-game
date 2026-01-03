@@ -16,6 +16,7 @@ pub struct AnimatedPlayer;
 /// for the object or entity
 // https://bevy.org/examples/animation/animated-mesh/
 #[derive(Resource)]
+#[allow(dead_code)]
 pub struct PlayerAnimations{
     pub graph_handle: Handle<AnimationGraph>,
     pub die: AnimationNodeIndex,
@@ -91,7 +92,7 @@ pub fn load_animation(
 pub fn animate_meshes(
     mut commands: Commands,
     animations: Res<PlayerAnimations>,
-    mut a_players: Query<(Entity, &mut AnimationPlayer), Added<AnimationPlayer>>,
+    mut a_players: Query<(Entity, &mut AnimationPlayer), Added<AnimationPlayer>>, // only newly added players 
     bodies: Query<(), With<PlayerBody>>,
     hierarchy: Query<&ChildOf>,
 ){

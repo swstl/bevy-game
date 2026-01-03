@@ -40,8 +40,10 @@ impl PlayerBundle {
             movement: Movement {
                 speed: 100.0,
                 sprint_aplifier: 3.0,
-                jump_strength: 15.0,
+                jump_strength: 7.0,
                 is_grounded: false,
+                extra_jumps: 2,
+                current_jumps: 0,
             },
         }
     }
@@ -71,10 +73,12 @@ impl SimplePlayerBundle {
             // friction: Friction::ZERO,
             locked_axes: LockedAxes::ROTATION_LOCKED,
             movement: Movement {
-                speed: 500.0,
+                speed: 100.0,
                 sprint_aplifier: 3.0,
-                jump_strength: 15.0,
+                jump_strength: 7.0,
                 is_grounded: false,
+                extra_jumps: 2,
+                current_jumps: 0,
             },
         }
     }

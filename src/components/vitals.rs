@@ -24,4 +24,12 @@ pub struct Movement {
     pub sprint_aplifier: f32,
     pub jump_strength: f32,
     pub is_grounded: bool,
+    pub extra_jumps: u32,
+    pub current_jumps: u32,
+}
+
+impl Movement {
+    pub fn can_jump(&self) -> bool {
+        self.is_grounded || self.current_jumps < self.extra_jumps
+    }
 }
