@@ -68,14 +68,16 @@ pub struct SimplePlayerBundle {
 impl SimplePlayerBundle {
     pub fn new() -> Self {
         Self {
-            transform: Transform::from_translation(Vec3::ZERO),
+            transform: Transform::from_translation(Vec3::new(
+                10.0, 10.0, 10.0
+            )),
             rigid_body: RigidBody::Dynamic,
             // friction: Friction::ZERO,
             locked_axes: LockedAxes::ROTATION_LOCKED,
             movement: Movement {
                 speed: 100.0,
                 sprint_aplifier: 3.0,
-                jump_strength: 7.0,
+                jump_strength: 6.0,
                 is_grounded: false,
                 extra_jumps: 2,
                 current_jumps: 0,

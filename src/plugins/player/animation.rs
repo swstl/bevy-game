@@ -1,10 +1,15 @@
+use crate::components::entities::LocalPlayer;
 //////////////////////////////////////////
 //////////// Player animation ////////////
 //////////////////////////////////////////
-use std::time::Duration;
+use crate::components::entities::Player;
+use crate::components::entities::PlayerAnimation;
+use crate::plugins::network::Recieved;
 use bevy::prelude::*;
-use super::PlayerBody;
+use std::time::Duration;
+
 use super::GLTF_PATH;
+use super::PlayerBody;
 
 const NUMBER_OF_ANIMATIONS: usize = 18;
 #[derive(Component)]
@@ -12,12 +17,12 @@ pub struct AnimatedPlayer;
 
 // A resource that stores a reference to an animation we want to play.
 // This will help prevent loading the animation multiple times
-/// this stores the refrence to the animation that can be played 
+/// this stores the refrence to the animation that can be played
 /// for the object or entity
 // https://bevy.org/examples/animation/animated-mesh/
 #[derive(Resource)]
 #[allow(dead_code)]
-pub struct PlayerAnimations{
+pub struct PlayerAnimations {
     pub graph_handle: Handle<AnimationGraph>,
     pub die: AnimationNodeIndex,
     pub duck: AnimationNodeIndex,
@@ -39,8 +44,6 @@ pub struct PlayerAnimations{
     pub yes: AnimationNodeIndex,
 }
 
-
-
 /////////////////////////////////
 //////////// Startup ////////////
 /////////////////////////////////
@@ -48,7 +51,7 @@ pub fn load_animation(
     mut commands: Commands,
     ass: Res<AssetServer>,
     mut graphs: ResMut<Assets<AnimationGraph>>,
-){
+) {
     let available_animations: Vec<_> = (0..NUMBER_OF_ANIMATIONS)
         .map(|i| ass.load(GltfAssetLabel::Animation(i).from_asset(GLTF_PATH)))
         .collect();
@@ -58,52 +61,55 @@ pub fn load_animation(
     let graph_handle = graphs.add(graph);
 
     // store refrence:
-    commands.insert_resource(
-        PlayerAnimations {
-            graph_handle,
-            die: indices[0],
-            duck: indices[1],
-            hitreact: indices[2],
-            idle: indices[3],
-            idlegun: indices[4],
-            idleshoot: indices[5],
-            jump: indices[6],
-            jumpidle: indices[7],
-            jumpland: indices[8],
-            no: indices[9],
-            punch: indices[10],
-            run: indices[11],
-            rungun: indices[12],
-            runshoot: indices[13],
-            walk: indices[14],
-            walkgun: indices[15],
-            wave: indices[16],
-            yes: indices[17],
-        }
-    )
+    commands.insert_resource(PlayerAnimations {
+        graph_handle,
+        die: indices[0],
+        duck: indices[1],
+        hitreact: indices[2],
+        idle: indices[3],
+        idlegun: indices[4],
+        idleshoot: indices[5],
+        jump: indices[6],
+        jumpidle: indices[7],
+        jumpland: indices[8],
+        no: indices[9],
+        punch: indices[10],
+        run: indices[11],
+        rungun: indices[12],
+        runshoot: indices[13],
+        walk: indices[14],
+        walkgun: indices[15],
+        wave: indices[16],
+        yes: indices[17],
+    })
 }
-
-
 
 /////////////////////////////////
 //////////// Updates ////////////
 /////////////////////////////////
 
-pub fn animate_meshes(
+pub fn animate_player_meshes(
     mut commands: Commands,
     animations: Res<PlayerAnimations>,
-    mut a_players: Query<(Entity, &mut AnimationPlayer), Added<AnimationPlayer>>, // only newly added players 
+    mut a_players: Query<(Entity, &mut AnimationPlayer), Added<AnimationPlayer>>, // only newly added players
     bodies: Query<(), With<PlayerBody>>,
+    locals: Query<(), (With<Player>, Without<Recieved>)>,
     hierarchy: Query<&ChildOf>,
-){
+) {
     for (entity, mut a_player) in &mut a_players {
         let mut current = entity;
         let mut found_player_body = false;
+        let mut is_local_player = false;
 
         // traverse up to find the playerbody (if any)
         while let Ok(child_of) = hierarchy.get(current) {
             if bodies.contains(child_of.0) {
                 found_player_body = true;
+                if let Ok(grandparent) = hierarchy.get(child_of.0)
+                    && locals.contains(grandparent.0)
+                {
+                    is_local_player = true;
+                }
                 break;
             }
             current = child_of.0;
@@ -118,12 +124,17 @@ pub fn animate_meshes(
                 .play(&mut a_player, animations.idle, Duration::ZERO)
                 .repeat();
 
-            commands
-                .entity(entity)
+            let mut entity_commands = commands.entity(entity);
+
+            entity_commands
                 .insert(AnimationGraphHandle(animations.graph_handle.clone()))
                 .insert(transitions)
+                .insert(PlayerAnimation)
                 .insert(AnimatedPlayer);
+
+            if is_local_player {
+                entity_commands.insert(LocalPlayer);
+            }
         }
     }
 }
-

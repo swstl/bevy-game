@@ -45,7 +45,6 @@ impl Plugin for MultiplayerPlugin {
         }
 
         app.add_systems(Startup, connect_multiplayer);
-        app.add_systems(Update, multiplayer_sender);
-        app.add_systems(Update, handle_sync);
+        app.add_systems(Update, (multiplayer_sender, handle_sync));
     }
 }
