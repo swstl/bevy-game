@@ -169,9 +169,7 @@ fn setup_menu(mut commands: Commands) {
 
 fn cleanup_menu(mut commands: Commands, menu_query: Query<Entity, With<MainMenuUI>>) {
     for entity in menu_query.iter() {
-        if let Ok(mut entity_mut) = commands.get_entity(entity) {
-            entity_mut.despawn();
-        }
+        commands.entity(entity).despawn();
     }
 }
 

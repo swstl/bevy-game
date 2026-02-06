@@ -274,9 +274,7 @@ fn cleanup_player(
     player_query: Query<Entity, With<Player>>,
 ) {
     for entity in player_query.iter() {
-        if let Ok(mut entity_mut) = commands.get_entity(entity) {
-            entity_mut.despawn();
-        }
+        commands.entity(entity).despawn();
     }
 }
 //

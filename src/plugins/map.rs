@@ -112,8 +112,6 @@ fn cleanup_map(
     ground_query: Query<Entity, With<Ground>>,
 ) {
     for entity in ground_query.iter() {
-        if let Ok(mut entity_mut) = commands.get_entity(entity) {
-            entity_mut.despawn();
-        }
+        commands.entity(entity).despawn();
     }
 }
