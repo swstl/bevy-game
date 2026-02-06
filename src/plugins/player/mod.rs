@@ -14,7 +14,7 @@ use crate::components::entities::PlayerBody;
 use crate::components::objects::Ground;
 use crate::components::vitals::Movement;
 use crate::plugins::GameLayer;
-use crate::plugins::menu::GameState;
+use crate::plugins::menu::{GameState, HasPlayed};
 use crate::plugins::network::Recieved;
 use crate::plugins::network::synchronizer::Synchronizer;
 use animation::animate_player_meshes;
@@ -36,9 +36,8 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Playing), (spawn_player, setup_camera, load_animation))
-            .add_systems(Update, (animate_player_meshes, move_player, move_camera).run_if(in_state(GameState::Playing)))
-            .add_systems(OnExit(GameState::Playing), cleanup_player);
+        app.add_systems(OnEnter(GameState::Playing), (spawn_player, setup_camera, load_animation).run_if(not(resource_exists::<HasPlayed>)))
+            .add_systems(Update, (animate_player_meshes, move_player, move_camera).run_if(in_state(GameState::Playing)));
     }
 }
 
@@ -46,6 +45,7 @@ impl Plugin for PlayerPlugin {
 //////////// Startup ////////////
 /////////////////////////////////
 fn spawn_player(mut commands: Commands, ass: Res<AssetServer>) {
+    commands.insert_resource(HasPlayed);
     commands
         .spawn((
             Name::new("LocalPlayer"),
