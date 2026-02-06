@@ -14,6 +14,7 @@ use crate::components::entities::PlayerBody;
 use crate::components::objects::Ground;
 use crate::components::vitals::Movement;
 use crate::plugins::GameLayer;
+use crate::plugins::menu::GameState;
 use crate::plugins::network::Recieved;
 use crate::plugins::network::synchronizer::Synchronizer;
 use animation::animate_player_meshes;
@@ -35,8 +36,9 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (spawn_player, setup_camera, load_animation))
-            .add_systems(Update, (animate_player_meshes, move_player, move_camera));
+        app.add_systems(OnEnter(GameState::Playing), (spawn_player, setup_camera, load_animation))
+            .add_systems(Update, (animate_player_meshes, move_player, move_camera).run_if(in_state(GameState::Playing)))
+            .add_systems(OnExit(GameState::Playing), cleanup_player);
     }
 }
 
@@ -263,6 +265,17 @@ fn on_ground_collision(
         if ground_transform.translation.y <= player_transform.translation.y {
             player.is_grounded = true;
             player.current_jumps = 0;
+        }
+    }
+}
+
+fn cleanup_player(
+    mut commands: Commands,
+    player_query: Query<Entity, With<Player>>,
+) {
+    for entity in player_query.iter() {
+        if let Ok(mut entity_mut) = commands.get_entity(entity) {
+            entity_mut.despawn();
         }
     }
 }

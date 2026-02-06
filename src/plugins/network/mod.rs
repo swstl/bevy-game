@@ -19,6 +19,7 @@ use synchronizer::{handle_sync, multiplayer_sender};
 use bevy::prelude::*;
 use tokio::runtime::Builder;
 use std::sync::Arc;
+use crate::plugins::menu::GameState;
 
 
 #[derive(Component)]
@@ -44,7 +45,7 @@ impl Plugin for MultiplayerPlugin {
             app.insert_resource(MultiplayerRuntime(mp_runtime));
         }
 
-        app.add_systems(Startup, connect_multiplayer);
-        app.add_systems(Update, (multiplayer_sender, handle_sync));
+        app.add_systems(OnEnter(GameState::Playing), connect_multiplayer);
+        app.add_systems(Update, (multiplayer_sender, handle_sync).run_if(in_state(GameState::Playing)));
     }
 }

@@ -2,8 +2,8 @@ mod plugins;
 mod components;
 
 use avian3d::PhysicsPlugins;
-use avian3d::prelude::PhysicsDebugPlugin;
 use plugins::map::MapPlugin;
+use plugins::menu::{MenuPlugin, GameState};
 use plugins::player::PlayerPlugin;
 use bevy::prelude::*;
 use bevy::window::CursorGrabMode;
@@ -24,12 +24,13 @@ fn main() {
             }),
             // PhysicsDebugPlugin,
             PhysicsPlugins::default(),
+            MenuPlugin,
             PlayerPlugin,
             MapPlugin,
             MultiplayerPlugin,
         ))
         .add_systems(Startup, setup)
-        .add_systems(Update, grab_mouse)
+        .add_systems(Update, grab_mouse.run_if(in_state(GameState::Playing)))
         .run();
 }
 
@@ -49,7 +50,7 @@ fn setup(
 }
 
 // This system grabs the mouse when the left mouse button is pressed
-// and releases it when the escape key / capslock is pressed
+// and releases it when capslock is pressed (escape returns to menu)
 fn grab_mouse(
     mut cursor_options: Single<&mut CursorOptions>,
     mouse: Res<ButtonInput<MouseButton>>,
@@ -61,8 +62,7 @@ fn grab_mouse(
         cursor_options.grab_mode = CursorGrabMode::Locked;
     }
 
-    if key.just_pressed(KeyCode::Escape) ||
-       key.just_pressed(KeyCode::CapsLock) 
+    if key.just_pressed(KeyCode::CapsLock) 
     {
         cursor_options.visible = true;
         cursor_options.grab_mode = CursorGrabMode::None;
