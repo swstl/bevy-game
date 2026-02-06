@@ -50,7 +50,7 @@ fn setup(
 }
 
 // This system grabs the mouse when the left mouse button is pressed
-// and releases it when capslock is pressed (escape returns to menu)
+// and releases it when the escape key / capslock is pressed
 fn grab_mouse(
     mut cursor_options: Single<&mut CursorOptions>,
     mouse: Res<ButtonInput<MouseButton>>,
@@ -62,7 +62,8 @@ fn grab_mouse(
         cursor_options.grab_mode = CursorGrabMode::Locked;
     }
 
-    if key.just_pressed(KeyCode::CapsLock) 
+    if key.just_pressed(KeyCode::Escape) ||
+       key.just_pressed(KeyCode::CapsLock) 
     {
         cursor_options.visible = true;
         cursor_options.grab_mode = CursorGrabMode::None;
