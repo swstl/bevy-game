@@ -1,4 +1,5 @@
 pub mod map;
+pub mod menu;
 pub mod network;
 pub mod player;
 use avian3d::prelude::PhysicsLayer;

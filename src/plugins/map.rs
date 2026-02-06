@@ -1,4 +1,5 @@
 use crate::{components::objects::Ground, plugins::GameLayer};
+use crate::plugins::menu::GameState;
 use avian3d::prelude::*;
 use bevy::prelude::*;
 use rand::{Rng, SeedableRng, rngs::StdRng};
@@ -9,7 +10,8 @@ pub struct MapPlugin;
 
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, generate_random_map);
+        app.add_systems(OnEnter(GameState::Playing), generate_random_map)
+            .add_systems(OnExit(GameState::Playing), cleanup_map);
     }
 }
 
@@ -102,5 +104,14 @@ fn generate_random_map(
         // Keep platforms within bounds
         current_pos.x = current_pos.x.clamp(2.0, MAP_SIZE as f32 - 2.0);
         current_pos.z = current_pos.z.clamp(2.0, MAP_SIZE as f32 - 2.0);
+    }
+}
+
+fn cleanup_map(
+    mut commands: Commands,
+    ground_query: Query<Entity, With<Ground>>,
+) {
+    for entity in ground_query.iter() {
+        commands.entity(entity).despawn();
     }
 }

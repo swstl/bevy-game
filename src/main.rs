@@ -2,8 +2,8 @@ mod plugins;
 mod components;
 
 use avian3d::PhysicsPlugins;
-use avian3d::prelude::PhysicsDebugPlugin;
 use plugins::map::MapPlugin;
+use plugins::menu::{MenuPlugin, GameState};
 use plugins::player::PlayerPlugin;
 use bevy::prelude::*;
 use bevy::window::CursorGrabMode;
@@ -24,12 +24,13 @@ fn main() {
             }),
             // PhysicsDebugPlugin,
             PhysicsPlugins::default(),
+            MenuPlugin,
             PlayerPlugin,
             MapPlugin,
             MultiplayerPlugin,
         ))
         .add_systems(Startup, setup)
-        .add_systems(Update, grab_mouse)
+        .add_systems(Update, grab_mouse.run_if(in_state(GameState::Playing)))
         .run();
 }
 
