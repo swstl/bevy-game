@@ -37,7 +37,8 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Playing), (spawn_player, setup_camera, load_animation).run_if(not(resource_exists::<HasPlayed>)))
-            .add_systems(Update, (animate_player_meshes, move_player, move_camera).run_if(in_state(GameState::Playing)));
+            .add_systems(Update, (animate_player_meshes, move_player, move_camera).run_if(in_state(GameState::Playing)))
+            .add_systems(OnEnter(GameState::Menu), cleanup_player);
     }
 }
 
@@ -276,6 +277,7 @@ fn cleanup_player(
     for entity in player_query.iter() {
         commands.entity(entity).despawn();
     }
+    commands.remove_resource::<HasPlayed>();
 }
 //
 // fn check_grounded(
